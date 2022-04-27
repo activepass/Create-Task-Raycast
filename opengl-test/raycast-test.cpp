@@ -5,9 +5,9 @@
 #include <math.h>
 #include <iostream>
 #define PI 3.1415926535
-#define P2 PI/2
-#define P3 3*PI/2
-#define DR 0.0174533
+#define PIOVER2 PI/2
+#define THREEPIOVER2 3*PI/2
+#define RADIANDEGREE 0.0174533
 
 using namespace std;
 
@@ -97,7 +97,8 @@ void drawRays()
 	
 	int r, mpX, mpY, mapPos, depthOfField; 
 	float rayX, rayY, rayAngle, xOffset, yOffset;
-	rayAngle = playerAngle - DR * rayCount; // set the initial ray angle to be the player's angle offset by 60 degrees (in radians)
+
+	rayAngle = playerAngle - RADIANDEGREE * rayCount; // set the initial ray angle to be the player's angle offset by 60 degrees (in radians)
 	rayAngle = checkAng(rayAngle);
 	for (r = 0; r < rayCount; r++) // iterate for number of rays `r<{raycount}`
 	{
@@ -144,14 +145,14 @@ void drawRays()
 		depthOfField = 0;
 		float disV = 1000000, vx = playerX, vy = playerY;
 		float negTan = -tan(rayAngle);
-		if (rayAngle > P2 && rayAngle < P3) // looking left
+		if (rayAngle > PIOVER2 && rayAngle < THREEPIOVER2) // looking left
 		{
 			rayX = (((int)playerX >> 6) << 6) - 0.0001;
 			rayY = (playerX - rayX)*negTan + playerY;
 			xOffset = -64;
 			yOffset = -xOffset * negTan; 
 		}
-		if (rayAngle < P2 || rayAngle > P3)  // looking right 
+		if (rayAngle < PIOVER2 || rayAngle > THREEPIOVER2)  // looking right 
 		{
 			rayX = (((int)playerX >> 6) << 6) + 64;
 			rayY = (playerX - rayX)*negTan + playerY;
@@ -202,7 +203,7 @@ void drawRays()
 		glVertex2i(rayX, rayY);
 		glEnd();
 		
-		rayAngle += DR*2;
+		rayAngle += RADIANDEGREE*2;
 		rayAngle = checkAng(rayAngle);
 	}
 }
