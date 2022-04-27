@@ -11,6 +11,7 @@
 
 float playerX,playerY,playerdx,playerdy,playerAngle,mouseX,mouseY;
 bool leftClick,rightClick,spaced;
+int rayState;
 
 void drawPlayer()
 {
@@ -71,8 +72,8 @@ void drawRays()
 {
 	
 	int r, mpX, mpY, mapPos, depthOfField; float rayX, rayY, rayAngle, xOffset, yOffset;
-	rayAngle = playerAngle - DR * 360; if (rayAngle < 0) { rayAngle += 2 * PI; } if (rayAngle > 2*PI) { rayAngle -= 2 * PI; }
-	for (r = 0; r < 360; r++)
+	rayAngle = playerAngle - DR * 60 * rayState; if (rayAngle < 0) { rayAngle += 2 * PI; } if (rayAngle > 2*PI) { rayAngle -= 2 * PI; }
+	for (r = 0; r < 60 * rayState; r++)
 	{
 		// Check Horizontal map lines
 		depthOfField = 0;
@@ -131,6 +132,15 @@ void mouse(int button, int state, int x, int y)
 		}
 		
 	}
+	if (button == 3 && state == GLUT_DOWN)
+	{
+		playerAngle -= 0.2; if (playerAngle < 0) { playerAngle += 2 * PI; } playerdx = cos(playerAngle) * 5; playerdy = sin(playerAngle) * 5;
+	}
+	if (button == 4 && state == GLUT_DOWN)
+	{
+		playerAngle += 0.2; if (playerAngle > 2 * PI) { playerAngle -= 2 * PI; } playerdx = cos(playerAngle) * 5; playerdy = sin(playerAngle) * 5;
+	}
+	glutPostRedisplay();
 }
 
 void motion(int x, int y)
@@ -155,10 +165,19 @@ void display()
 
 void buttons(unsigned char key, int x, int y)
 {
-	if (key == 'a') { playerAngle -= 0.1; if (playerAngle < 0) { playerAngle += 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
-	if (key == 'd') { playerAngle += 0.1; if (playerAngle > 2*PI) { playerAngle -= 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
-	if (key == 'w') { playerX += playerdx; playerY += playerdy; }
-	if (key == 's') { playerX -= playerdx; playerY -= playerdy; }
+	//if (key == 'a') { playerAngle -= 0.1; if (playerAngle < 0) { playerAngle += 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
+	//if (key == 'd') { playerAngle += 0.1; if (playerAngle > 2*PI) { playerAngle -= 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
+	//if (key == 'w') { playerX += playerdx; playerY += playerdy; }
+	//if (key == 's') { playerX -= playerdx; playerY -= playerdy; }
+	if (key == ' ') 
+	{
+		if (rayState == 1) {
+			rayState = 6;
+		}
+		else {
+			rayState = 1;
+		}
+	}
 	glutPostRedisplay();
 }
 
@@ -169,6 +188,7 @@ void init()
 	glClearColor(0.3, 0.3, 0.3, 0);
 	gluOrtho2D(0, 1024, 512, 0);
 	playerX = 300; playerY = 300; playerdx = cos(playerAngle) * 5; playerdy = sin(playerAngle) * 5;
+	rayState = 1;
 }
 
 int main(int argc, char* argv[]) 
