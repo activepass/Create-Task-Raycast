@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <GL/freeglut.h>
 #include <math.h>
+#include <iostream>
 #define PI 3.1415926535
 #define P2 PI/2
 #define P3 3*PI/2
 #define DR 0.0174533
+
+using namespace std;
 
 
 float playerX,playerY,playerdx,playerdy,playerAngle,mouseX,mouseY;
@@ -16,7 +19,7 @@ int rayCount;
 void drawPlayer()
 {
 	// Draw Player
-	glColor3f(1, 1, 1);
+	glColor3f(0.388, 0, 1);
 	glPointSize(8);
 	glBegin(GL_POINTS);
 	glVertex2i(playerX, playerY);
@@ -192,14 +195,14 @@ void drawRays()
 		}
 		
 		// Draw ray
-		glColor3f(1, 1, 0);
+		glColor3f(0,0.8,0.6);
 		glLineWidth(1);
 		glBegin(GL_LINES);
 		glVertex2i(playerX, playerY);
 		glVertex2i(rayX, rayY);
 		glEnd();
 		
-		rayAngle += DR;
+		rayAngle += DR*2;
 		rayAngle = checkAng(rayAngle);
 	}
 }
@@ -274,8 +277,8 @@ void buttons(unsigned char key, int x, int y)
 	//if (key == 'd') { playerAngle += 0.1; if (playerAngle > 2*PI) { playerAngle -= 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
 	//if (key == 'w') { playerX += playerdx; playerY += playerdy; }
 	//if (key == 's') { playerX -= playerdx; playerY -= playerdy; }
-	if (key == '=') { rayCount += 1; }
-	if (key == '-') { rayCount -= 1; }
+	if (key == '=') { rayCount += 1;}
+	if (key == '-') { rayCount -= 1;}
 	if (key == ' ') 
 	{
 		if (rayCount == 1) 
@@ -287,6 +290,13 @@ void buttons(unsigned char key, int x, int y)
 			rayCount = 1;
 		}
 	}
+	if (rayCount == 0) {
+		rayCount = 360;
+	}
+	else if (rayCount > 360) {
+		rayCount = 1;
+	}
+	cout << "rays: " << rayCount << "\n";
 	glutPostRedisplay();
 }
 
