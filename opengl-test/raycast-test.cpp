@@ -43,10 +43,11 @@ int map[] =
 	1,1,1,1,1,1,1,1,
 };
 
-void drawMap()
+void drawMap() // draw a visual map from tile map
 {
 	int x, y, xo, yo;
-	for (y = 0; y < mapY; y++)
+	
+	for (y = 0; y < mapY; y++) // Iterate through Each x,y value
 	{
 		for (x = 0; x < mapX; x++)
 		{
@@ -93,7 +94,7 @@ void drawRays()
 	
 	int r, mpX, mpY, mapPos, depthOfField; 
 	float rayX, rayY, rayAngle, xOffset, yOffset;
-	rayAngle = playerAngle - DR * 60 * rayState; 
+	rayAngle = playerAngle - DR * 60 * rayState; // set the initial ray angle to be the player's angle offset by 60 degrees (in radians)
 	rayAangle = checkAng(rayAngle);
 	for (r = 0; r < 60 * rayState; r++) // iterate for number of rays `r<{raycount}`
 	{
