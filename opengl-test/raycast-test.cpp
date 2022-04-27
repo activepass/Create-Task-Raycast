@@ -11,7 +11,7 @@
 
 float playerX,playerY,playerdx,playerdy,playerAngle,mouseX,mouseY;
 bool leftClick,rightClick,spaced;
-int rayState;
+int rayCount;
 
 void drawPlayer()
 {
@@ -94,9 +94,9 @@ void drawRays()
 	
 	int r, mpX, mpY, mapPos, depthOfField; 
 	float rayX, rayY, rayAngle, xOffset, yOffset;
-	rayAngle = playerAngle - DR * 60 * rayState; // set the initial ray angle to be the player's angle offset by 60 degrees (in radians)
-	rayAangle = checkAng(rayAngle);
-	for (r = 0; r < 60 * rayState; r++) // iterate for number of rays `r<{raycount}`
+	rayAngle = playerAngle - DR * rayCount; // set the initial ray angle to be the player's angle offset by 60 degrees (in radians)
+	rayAngle = checkAng(rayAngle);
+	for (r = 0; r < rayCount; r++) // iterate for number of rays `r<{raycount}`
 	{
 		// Check Horizontal map lines
 		depthOfField = 0;
@@ -274,15 +274,17 @@ void buttons(unsigned char key, int x, int y)
 	//if (key == 'd') { playerAngle += 0.1; if (playerAngle > 2*PI) { playerAngle -= 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
 	//if (key == 'w') { playerX += playerdx; playerY += playerdy; }
 	//if (key == 's') { playerX -= playerdx; playerY -= playerdy; }
+	if (key == '=') { rayCount += 1; }
+	if (key == '-') { rayCount -= 1; }
 	if (key == ' ') 
 	{
-		if (rayState == 1) 
+		if (rayCount == 1) 
 		{
-			rayState = 6;
+			rayCount = 360;
 		}
 		else 
 		{
-			rayState = 1;
+			rayCount = 1;
 		}
 	}
 	glutPostRedisplay();
@@ -298,7 +300,7 @@ void init()
 	playerY = 300; 
 	//playerdx = cos(playerAngle) * 5; 
 	//playerdy = sin(playerAngle) * 5;
-	rayState = 1;
+	rayCount = 1;
 }
 
 int main(int argc, char* argv[]) 
