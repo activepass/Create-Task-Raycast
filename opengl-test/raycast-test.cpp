@@ -47,7 +47,7 @@ public:
 	}
 };
 
-bool leftClick,rightClick;
+bool leftClick, rightClick;
 int rayCount;
 Player *player;
 
@@ -66,39 +66,42 @@ void drawPlayer(Player *player)
 int mapX = 8, mapY = 8, mapS = 64;
 int map[] =
 {
-	1,1,1,1,1,1,1,1,
-	1,0,0,0,0,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,1,1,1,1,1,1,1,
+	2,2,2,2,2,2,2,2,
+	2,0,0,0,0,0,0,2,
+	2,0,0,0,0,0,0,2,
+	2,0,0,0,0,0,0,2,
+	2,0,0,0,0,0,0,2,
+	2,0,0,0,0,0,0,2,
+	2,0,0,0,0,0,0,2,
+	2,2,2,2,2,2,2,2,
 };
 
 void drawMap() // draw a visual map from tile map
 {
 	int x, y, xo, yo;
-	
+
 	for (y = 0; y < mapY; y++) // Iterate through Each x,y value
 	{
 		for (x = 0; x < mapX; x++)
 		{
 			if (map[y*mapX + x] == 1) // if tile value is 1, make tile display as white
 			{
-				glColor3f(1, 1, 1); 
+				glColor3f(1, 1, 1);
+			}
+			else if (map[y*mapX + x] == 2) {
+				glColor3f(.9, .9, .9);
 			}
 			else			  // otherwise, display as black
-			{ 
+			{
 				glColor3f(0, 0, 0);
 			}
 			xo = x * mapS;
 			yo = y * mapS;
 			glBegin(GL_QUADS); // draw tile box
-			glVertex2i(xo+1, yo+1); // bottom left vertex
-			glVertex2i(xo+1, yo+mapS-1);
-			glVertex2i(xo+mapS-1, yo+mapS-1);
-			glVertex2i(xo+mapS-1, yo+1);
+			glVertex2i(xo + 1, yo + 1); // bottom left vertex
+			glVertex2i(xo + 1, yo + mapS - 1);
+			glVertex2i(xo + mapS - 1, yo + mapS - 1);
+			glVertex2i(xo + mapS - 1, yo + 1);
 			glEnd();
 		}
 	}
@@ -106,25 +109,25 @@ void drawMap() // draw a visual map from tile map
 
 float dist(float ax, float ay, float bx, float by, float angle) // Calculate Length of the Hypotenuse via pythagorean's theorem
 {
-	return ( sqrt((bx - ax)*(bx - ax) + (by - ay)*(by - ay)) );
+	return (sqrt((bx - ax)*(bx - ax) + (by - ay)*(by - ay)));
 }
 
 float returnUnitAngle(float angle)
 {
 	if (angle < 0) // if ray angle decreases less than zero, set back to 2pi
-	{ 
-		angle += 2 * PI; 
-	} 
-	if (angle > 2*PI) // if ray angle increases over 2pi, set back to 0
-	{ 
-		angle -= 2 * PI; 
+	{
+		angle += 2 * PI;
+	}
+	if (angle > 2 * PI) // if ray angle increases over 2pi, set back to 0
+	{
+		angle -= 2 * PI;
 	}
 	return angle;
 }
 
 Ray *getHorizontalRay(float rayAngleH, Player *player) {
 	// Check Horizontal map lines
-	int depthOfField, mpX, mpY, mapPos;
+	int depthOfField=0, mpX, mpY, mapPos;
 	float rayX, rayY, xOffset, yOffset, disH = 1000000, hx = player->x, hy = player->y;
 	depthOfField = 0;
 	float aTan = -1 / tan(rayAngleH);
@@ -153,7 +156,7 @@ Ray *getHorizontalRay(float rayAngleH, Player *player) {
 		mpX = divideBy64((int)(rayX));
 		mpY = divideBy64((int)(rayY));
 		mapPos = mpY * mapX + mpX;
-		if (mapPos > 0 && mapPos < mapX*mapY && map[mapPos] == 1) // if position is in array size, and value of tile at position is 1; Has hit a horizontal wall
+		if (mapPos > 0 && mapPos < mapX*mapY && map[mapPos] > 0) // if position is in array size, and value of tile at position is 1; Has hit a horizontal wall
 		{
 			hx = rayX;
 			hy = rayY;
@@ -162,13 +165,13 @@ Ray *getHorizontalRay(float rayAngleH, Player *player) {
 		}
 		else { rayX += xOffset; rayY += yOffset; depthOfField += 1; } //If not Wall, Check next
 	}
-	Ray *hMap = new Ray( disH, hx, hy );
+	Ray *hMap = new Ray(disH, hx, hy);
 	return hMap;
 }
 
 Ray *getVerticalRay(float rayAngleV, Player *player) {
 	// Check Vertical map lines
-	int depthOfField=0, mpX, mpY, mapPos;
+	int depthOfField = 0, mpX, mpY, mapPos;
 	float rayX, rayY, xOffset, yOffset, disV = 1000000, vx = player->x, vy = player->y;
 	float negTan = -tan(rayAngleV);
 	if (rayAngleV > PIOVER2 && rayAngleV < THREEPIOVER2) // looking left
@@ -196,7 +199,7 @@ Ray *getVerticalRay(float rayAngleV, Player *player) {
 		mpX = divideBy64((int)(rayX));
 		mpY = divideBy64((int)(rayY));
 		mapPos = mpY * mapX + mpX;
-		if (mapPos > 0 && mapPos < mapX*mapY && map[mapPos] == 1) // if position is in array size, and value of tile at position is 1; Has hit a horizontal wall
+		if (mapPos > 0 && mapPos < mapX*mapY && map[mapPos] > 0) // if position is in array size, and value of tile at position is 1; Has hit a horizontal wall
 		{
 			vx = rayX;
 			vy = rayY;
@@ -216,10 +219,10 @@ Ray *getVerticalRay(float rayAngleV, Player *player) {
 
 void drawRays(Player *player)
 {
-	
-	int r; 
+
+	int r;
 	float rayAngle;
-	if (map[(divideBy64((int)player->y)) * mapX + (divideBy64((int)player->x))] == 1) {
+	if (map[(divideBy64((int)player->y)) * mapX + (divideBy64((int)player->x))] > 0) {
 		return;
 	}
 
@@ -232,7 +235,7 @@ void drawRays(Player *player)
 		Ray *verticalRay = getVerticalRay(rayAngle, player);
 		Ray *finalRay = NULL;
 		if (verticalRay->length < horizontalRay->length) // get whichever distance is shorter, and draw that line
-		{ 
+		{
 			finalRay = new Ray(verticalRay);
 		}
 		else if (verticalRay->length > horizontalRay->length)
@@ -242,16 +245,16 @@ void drawRays(Player *player)
 		else {
 			return;
 		}
-		
+
 		// Draw ray
-		glColor3f(0,0.8,0.6);
+		glColor3f(0, 0.8, 0.6);
 		glLineWidth(1);
 		glBegin(GL_LINES);
-		glVertex2i(player->x,player->y);
-		glVertex2i(finalRay->x,finalRay->y);
+		glVertex2i(player->x, player->y);
+		glVertex2i(finalRay->x, finalRay->y);
 		glEnd();
-		
-		rayAngle += RADIANDEGREE*2;
+
+		rayAngle += RADIANDEGREE * 2;
 		rayAngle = returnUnitAngle(rayAngle);
 	}
 }
@@ -266,15 +269,15 @@ void mouse(int button, int state, int x, int y)
 	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
 	{
 		mouseMap = (divideBy64((int)y)) * mapX + (divideBy64((int)x)); // pos in tile map
-		if (mouseMap > 0 && mouseMap < mapX*mapY && map[mouseMap] == 0) 
+		if (mouseMap > 0 && mouseMap < mapX*mapY && map[mouseMap] == 0)
 		{
 			map[mouseMap] = 1;
 		}
-		else if (mouseMap > 0 && mouseMap < mapX*mapY && map[mouseMap] == 1) 
+		else if (mouseMap > 0 && mouseMap < mapX*mapY && map[mouseMap] == 1)
 		{
 			map[mouseMap] = 0;
 		}
-		
+
 	}
 	if (button == 3 && state == GLUT_DOWN)
 	{
@@ -288,9 +291,9 @@ void mouse(int button, int state, int x, int y)
 	{
 		player->angle += 0.2;
 		if (player->angle > 2 * PI)
-		{ 
+		{
 			player->angle -= 2 * PI;
-		} 
+		}
 	}
 	glutPostRedisplay();
 }
@@ -322,15 +325,15 @@ void buttons(unsigned char key, int x, int y)
 	//if (key == 'd') { playerAngle += 0.1; if (playerAngle > 2*PI) { playerAngle -= 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
 	//if (key == 'w') { playerX += playerdx; playerY += playerdy; }
 	//if (key == 's') { playerX -= playerdx; playerY -= playerdy; }
-	if (key == '=') { rayCount += 1;}
-	if (key == '-') { rayCount -= 1;}
-	if (key == ' ') 
+	if (key == '=') { rayCount += 1; }
+	if (key == '-') { rayCount -= 1; }
+	if (key == ' ')
 	{
-		if (rayCount == 1) 
+		if (rayCount == 1)
 		{
 			rayCount = 360;
 		}
-		else 
+		else
 		{
 			rayCount = 1;
 		}
@@ -347,7 +350,7 @@ void buttons(unsigned char key, int x, int y)
 
 
 
-void init() 
+void init()
 {
 	glClearColor(0.3, 0.3, 0.3, 0);
 	gluOrtho2D(0, 1024, 512, 0);
@@ -355,7 +358,7 @@ void init()
 	player = new Player();
 }
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
@@ -368,8 +371,3 @@ int main(int argc, char* argv[])
 	glutMotionFunc(motion);
 	glutMainLoop();
 }
-
-// Classes
-
-
-
