@@ -4,7 +4,7 @@
 #include <GL/freeglut.h>
 #include <math.h>
 #include <iostream>
-#include <array>
+#include <string>
 #define PI 3.1415926535
 #define PIOVER2 PI/2
 #define THREEPIOVER2 3*PI/2
@@ -27,7 +27,7 @@ public:
 	Player() {
 		x = 300;
 		y = 300;
-		angle = 0;
+		angle = .5;
 	}
 };
 class Ray {
@@ -47,14 +47,13 @@ public:
 	}
 };
 
-bool leftClick, rightClick;
+bool leftClick, rightClick, spaceClick, plusClick, minusClick;
 int rayCount;
 Player *player;
 
 void drawPlayer(Player *player)
 {
-	// Draw Player
-	glColor3f(0.388, 0, 1);
+	glColor3f(0.6, 0.1, 1);
 	glPointSize(8);
 	glBegin(GL_POINTS);
 	glVertex2i(player->x, player->y);
@@ -63,8 +62,8 @@ void drawPlayer(Player *player)
 
 }
 
-int mapX = 8, mapY = 8, mapS = 64;
-int map[] =
+int mapX = 8, mapY = 8, mapScale = 64;
+int tileMap[] =
 {
 	2,2,2,2,2,2,2,2,
 	2,0,0,0,0,0,0,2,
@@ -78,30 +77,31 @@ int map[] =
 
 void drawMap() // draw a visual map from tile map
 {
-	int x, y, xo, yo;
+	int x, y, xOffset, yOffset, currentPos;
 
 	for (y = 0; y < mapY; y++) // Iterate through Each x,y value
 	{
 		for (x = 0; x < mapX; x++)
 		{
-			if (map[y*mapX + x] == 1) // if tile value is 1, make tile display as white
+			currentPos = tileMap[y*mapX + x];
+			if (currentPos == 1) // if tile value is 1, make tile display as white
 			{
 				glColor3f(1, 1, 1);
 			}
-			else if (map[y*mapX + x] == 2) {
-				glColor3f(.9, .9, .9);
+			else if (currentPos == 2) {
+				glColor3f(.8, .8, .8);
 			}
 			else			  // otherwise, display as black
 			{
 				glColor3f(0, 0, 0);
 			}
-			xo = x * mapS;
-			yo = y * mapS;
+			xOffset = x * mapScale;
+			yOffset = y * mapScale;
 			glBegin(GL_QUADS); // draw tile box
-			glVertex2i(xo + 1, yo + 1); // bottom left vertex
-			glVertex2i(xo + 1, yo + mapS - 1);
-			glVertex2i(xo + mapS - 1, yo + mapS - 1);
-			glVertex2i(xo + mapS - 1, yo + 1);
+			glVertex2i(xOffset, yOffset);
+			glVertex2i(xOffset, yOffset + mapScale);
+			glVertex2i(xOffset + mapScale, yOffset + mapScale);
+			glVertex2i(xOffset + mapScale, yOffset);
 			glEnd();
 		}
 	}
@@ -125,27 +125,25 @@ float returnUnitAngle(float angle)
 	return angle;
 }
 
-Ray *getHorizontalRay(float rayAngleH, Player *player) {
-	// Check Horizontal map lines
-	int depthOfField=0, mpX, mpY, mapPos;
-	float rayX, rayY, xOffset, yOffset, disH = 1000000, hx = player->x, hy = player->y;
-	depthOfField = 0;
+Ray *getHorizontalRay(float rayAngleH, Player *player) {	// Check Horizontal map lines
+	int depthOfField=0, rayTileX, rayTileY, mapPos;
+	float rayX, rayY, xOffset, yOffset, disH = 1000, horizontalX = player->x, horizontalY = player->y;
 	float aTan = -1 / tan(rayAngleH);
-	if (rayAngleH > PI) //looking up
+	if (rayAngleH > PI) // if the ray is facing down
 	{
 		rayY = multiplyBy64((int)(divideBy64((int)player->y))) - 0.0001;
 		rayX = (player->y - rayY)*aTan + player->x;
 		yOffset = -64;
 		xOffset = -yOffset * aTan;
 	}
-	if (rayAngleH < PI) //looking down
+	if (rayAngleH < PI) // if the ray is facing upwards
 	{
 		rayY = multiplyBy64((int)(divideBy64((int)player->y))) + 64;
 		rayX = (player->y - rayY)*aTan + player->x;
 		yOffset = 64;
 		xOffset = -yOffset * aTan;
 	}
-	if (rayAngleH == 0 || rayAngleH == PI)
+	if (rayAngleH == 0 || rayAngleH == PI) // if ray is facing directly left or right
 	{
 		rayX = player->x;
 		rayY = player->y;
@@ -153,42 +151,42 @@ Ray *getHorizontalRay(float rayAngleH, Player *player) {
 	}
 	while (depthOfField < 8)
 	{
-		mpX = divideBy64((int)(rayX));
-		mpY = divideBy64((int)(rayY));
-		mapPos = mpY * mapX + mpX;
-		if (mapPos > 0 && mapPos < mapX*mapY && map[mapPos] > 0) // if position is in array size, and value of tile at position is 1; Has hit a horizontal wall
+		rayTileX = divideBy64((int)(rayX));
+		rayTileY = divideBy64((int)(rayY));
+		mapPos = rayTileY * mapX + rayTileX;
+		if (mapPos > 0 && mapPos < mapX*mapY && tileMap[mapPos] > 0) // if position is in array bounds, and value of tile at position is not 0; Has hit a horizontal wall
 		{
-			hx = rayX;
-			hy = rayY;
-			disH = dist(player->x, player->y, hx, hy, rayAngleH); //distance between the ray's end and the player
+			horizontalX = rayX;
+			horizontalY = rayY;
+			disH = dist(player->x, player->y, horizontalX, horizontalY, rayAngleH); //distance between the ray's end and the player
 			depthOfField = 8; // exit condition
 		}
-		else { rayX += xOffset; rayY += yOffset; depthOfField += 1; } //If not Wall, Check next
+		else { rayX += xOffset; rayY += yOffset; depthOfField += 1; } // If not a Wall, Check next iteration
 	}
-	Ray *hMap = new Ray(disH, hx, hy);
+	Ray *hMap = new Ray(disH, horizontalX, horizontalY);
 	return hMap;
 }
 
 Ray *getVerticalRay(float rayAngleV, Player *player) {
 	// Check Vertical map lines
-	int depthOfField = 0, mpX, mpY, mapPos;
-	float rayX, rayY, xOffset, yOffset, disV = 1000000, vx = player->x, vy = player->y;
+	int depthOfField = 0, rayTileX, rayTileY, mapPos;
+	float rayX, rayY, xOffset, yOffset, disV = 1000, vx = player->x, vy = player->y;
 	float negTan = -tan(rayAngleV);
-	if (rayAngleV > PIOVER2 && rayAngleV < THREEPIOVER2) // looking left
+	if (rayAngleV > PIOVER2 && rayAngleV < THREEPIOVER2) // if ray is facing left
 	{
 		rayX = multiplyBy64((int)(divideBy64((int)player->x))) - 0.0001;
 		rayY = (player->x - rayX)*negTan + player->y;
 		xOffset = -64;
 		yOffset = -xOffset * negTan;
 	}
-	if (rayAngleV < PIOVER2 || rayAngleV > THREEPIOVER2)  // looking right 
+	if (rayAngleV < PIOVER2 || rayAngleV > THREEPIOVER2)  // if ray is facing right
 	{
 		rayX = multiplyBy64((int)(divideBy64((int)player->x))) + 64;
 		rayY = (player->x - rayX)*negTan + player->y;
 		xOffset = 64;
 		yOffset = -xOffset * negTan;
 	}
-	if (rayAngleV == 0 || rayAngleV == PI) // looking direct left or right
+	if (rayAngleV == 0 || rayAngleV == PI) // if ray is facing directly left or right
 	{
 		rayX = player->x;
 		rayY = player->y;
@@ -196,14 +194,14 @@ Ray *getVerticalRay(float rayAngleV, Player *player) {
 	}
 	while (depthOfField < 8) //iterator
 	{
-		mpX = divideBy64((int)(rayX));
-		mpY = divideBy64((int)(rayY));
-		mapPos = mpY * mapX + mpX;
-		if (mapPos > 0 && mapPos < mapX*mapY && map[mapPos] > 0) // if position is in array size, and value of tile at position is 1; Has hit a horizontal wall
+		rayTileX = divideBy64((int)(rayX));
+		rayTileY = divideBy64((int)(rayY));
+		mapPos = rayTileY * mapX + rayTileX;
+		if (mapPos > 0 && mapPos < mapX*mapY && tileMap[mapPos] > 0) // if position is in array bounds, and value of tile at position is not 0; Has hit a vertical wall
 		{
 			vx = rayX;
 			vy = rayY;
-			disV = dist(player->x, player->y, vx, vy, rayAngleV); //distance between the ray's end and the player
+			disV = dist(player->x, player->y, vx, vy, rayAngleV); // distance between the ray's end and the player
 			depthOfField = 8; // exit condition
 		}
 		else  //If not Wall, Check next
@@ -222,7 +220,7 @@ void drawRays(Player *player)
 
 	int r;
 	float rayAngle;
-	if (map[(divideBy64((int)player->y)) * mapX + (divideBy64((int)player->x))] > 0) {
+	if (tileMap[(divideBy64((int)player->y)) * mapX + (divideBy64((int)player->x))] > 0) {
 		return;
 	}
 
@@ -231,10 +229,10 @@ void drawRays(Player *player)
 	for (r = 0; r < rayCount; r++) // iterate for number of rays `r<{raycount}`
 	{
 		Ray *horizontalRay = getHorizontalRay(rayAngle, player);
-
 		Ray *verticalRay = getVerticalRay(rayAngle, player);
 		Ray *finalRay = NULL;
-		if (verticalRay->length < horizontalRay->length) // get whichever distance is shorter, and draw that line
+
+		if (verticalRay->length < horizontalRay->length) // get whichever ray is shorter, and draw that ray
 		{
 			finalRay = new Ray(verticalRay);
 		}
@@ -247,9 +245,16 @@ void drawRays(Player *player)
 		}
 
 		// Draw ray
-		glColor3f(0, 0.8, 0.6);
+		
 		glLineWidth(1);
 		glBegin(GL_LINES);
+		if (tileMap[(divideBy64((int)finalRay->y)) * mapX + (divideBy64((int)finalRay->x))] == 2) // if ray hits wall, color ray white
+		{
+			glColor3f(1, 1, 1);
+		}
+		else { // else color ray green (indicates has hit tile)
+			glColor3f(0.196, 0.886, 0.282);
+		}
 		glVertex2i(player->x, player->y);
 		glVertex2i(finalRay->x, finalRay->y);
 		glEnd();
@@ -259,27 +264,30 @@ void drawRays(Player *player)
 	}
 }
 
-void mouse(int button, int state, int x, int y)
+void mouseActionHandler(int button, int state, int x, int y)
 {
 	int mouseMap;
 	if (button == GLUT_LEFT_BUTTON)
 	{
 		leftClick = (state == GLUT_DOWN);
 	}
-	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+	else if (button == GLUT_RIGHT_BUTTON)
 	{
-		mouseMap = (divideBy64((int)y)) * mapX + (divideBy64((int)x)); // pos in tile map
-		if (mouseMap > 0 && mouseMap < mapX*mapY && map[mouseMap] == 0)
-		{
-			map[mouseMap] = 1;
-		}
-		else if (mouseMap > 0 && mouseMap < mapX*mapY && map[mouseMap] == 1)
-		{
-			map[mouseMap] = 0;
+		rightClick = (state == GLUT_DOWN);
+		if (rightClick) {
+			mouseMap = (divideBy64((int)y)) * mapX + (divideBy64((int)x)); // pos in tile map
+			if (mouseMap > 0 && mouseMap < mapX*mapY && tileMap[mouseMap] == 0)
+			{
+				tileMap[mouseMap] = 1;
+			}
+			else if (mouseMap > 0 && mouseMap < mapX*mapY && tileMap[mouseMap] == 1)
+			{
+				tileMap[mouseMap] = 0;
+			}
 		}
 
 	}
-	if (button == 3 && state == GLUT_DOWN)
+	else if (button == 3 && state == GLUT_DOWN)
 	{
 		player->angle -= 0.2;
 		if (player->angle < 0)
@@ -287,7 +295,7 @@ void mouse(int button, int state, int x, int y)
 			player->angle += 2 * PI;
 		}
 	}
-	if (button == 4 && state == GLUT_DOWN)
+	else if (button == 4 && state == GLUT_DOWN)
 	{
 		player->angle += 0.2;
 		if (player->angle > 2 * PI)
@@ -308,11 +316,45 @@ void motion(int x, int y)
 	glutPostRedisplay();
 }
 
+void drawTextFromString(float x, float y, string string) 
+{
+	glColor3f(0, 0.8, 0.6);
+	glRasterPos2f(x, y);
+	for (int i = 0; i < string.size(); ++i) // Loop through String 
+	{
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]); 
+	}
+}
+
+void drawReactiveText(float x, float y, string string, bool state) {
+	if (state) {glColor3f(0.196, 0.886, 0.282);}
+	else { glColor3f(0.933, 0.102, 0.102); }
+	glRasterPos2f(x, y);
+	for (int i = 0; i < string.size(); ++i)
+	{
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
+	}
+}
+
+void callText() 
+{
+	drawTextFromString(540, 30, "Hold Click to Move Player");
+	drawTextFromString(540, 80, "Scroll to Turn the ray");
+	drawTextFromString(540, 130, "Press +/- to change number of rays");
+	drawTextFromString(540, 180, "Right Click to place/remove a tile");
+	drawTextFromString(540, 230, "Press `Space` to toggle between 1 and 360 rays");
+	drawTextFromString(540, 330, "Number of Rays: " + to_string(rayCount));
+	drawTextFromString(540, 380, "Player's Angle: " + to_string((player->angle) / RADIANDEGREE));
+	drawReactiveText(900, 330, "[LMB]", leftClick);
+	drawReactiveText(900, 380, "[RMB]", rightClick);
+
+}
 
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	drawMap();
+	callText();
 	drawRays(player);
 	drawPlayer(player);
 	glutSwapBuffers();
@@ -320,14 +362,13 @@ void display()
 
 void buttons(unsigned char key, int x, int y)
 {
-	// old Key movement
-	//if (key == 'a') { playerAngle -= 0.1; if (playerAngle < 0) { playerAngle += 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
-	//if (key == 'd') { playerAngle += 0.1; if (playerAngle > 2*PI) { playerAngle -= 2 * PI; } playerdx = cos(playerAngle)*5; playerdy = sin(playerAngle)*5; }
-	//if (key == 'w') { playerX += playerdx; playerY += playerdy; }
-	//if (key == 's') { playerX -= playerdx; playerY -= playerdy; }
-	if (key == '=') { rayCount += 1; }
-	if (key == '-') { rayCount -= 1; }
-	if (key == ' ')
+	if (key == '=') {
+		rayCount += 1; minusClick = true;
+	} // increment Ray Count
+	if (key == '-') {
+		rayCount -= 1; minusClick = true;
+	} // decrement Ray Count
+	if (key == ' ') // Spacebar case - toggle b/w 1 & 360 rays
 	{
 		if (rayCount == 1)
 		{
@@ -338,13 +379,12 @@ void buttons(unsigned char key, int x, int y)
 			rayCount = 1;
 		}
 	}
-	if (rayCount == 0) {
+	if (rayCount == 0) { // Link 1 ray and 360 rays
 		rayCount = 360;
 	}
 	else if (rayCount > 360) {
 		rayCount = 1;
 	}
-	cout << "rays: " << rayCount << "\n";
 	glutPostRedisplay();
 }
 
@@ -367,7 +407,7 @@ int main(int argc, char* argv[])
 	init();
 	glutDisplayFunc(display);
 	glutKeyboardFunc(buttons);
-	glutMouseFunc(mouse);
+	glutMouseFunc(mouseActionHandler);
 	glutMotionFunc(motion);
 	glutMainLoop();
 }
