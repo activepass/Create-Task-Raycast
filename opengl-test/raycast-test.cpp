@@ -53,7 +53,7 @@ public:
 
 // GLOBALS
 
-bool leftClick, rightClick, spaceClick;
+bool leftClick, rightClick, spaceClick, debugMode=false;
 int rayCount;
 Player *player;
 
@@ -128,7 +128,7 @@ Ray *getHorizontalRay(float rayAngle, Player *player) {		// Check Horizontal map
 	float normalTan = -1 / tan(rayAngle);
 	if (rayAngle > PI) // if the ray is facing upwards
 	{
-		rayY = multiplyBy64((int)(divideBy64((int)player->y))) - 0.0001; // accuracy
+ 		rayY = multiplyBy64((int)(divideBy64((int)player->y))) - 0.0001; // accuracy
 		rayX = (player->y - rayY)*normalTan + player->x;
 		yOffset = -mapScale;
 		xOffset = -yOffset * normalTan;
@@ -151,6 +151,13 @@ Ray *getHorizontalRay(float rayAngle, Player *player) {		// Check Horizontal map
 		rayTileX = divideBy64((int)(rayX));
 		rayTileY = divideBy64((int)(rayY));
 		mapPos = rayTileY * mapX + rayTileX;
+		if (debugMode && rayX < 500) { // show vertices in blue
+			glColor3f(0.1, 0.1, 1);
+			glPointSize(6);
+			glBegin(GL_POINTS);
+			glVertex2i(rayX, rayY);
+			glEnd();
+		}
 		if (mapPos > 0 && mapPos < mapX*mapY && tileMap[mapPos] > 0) // if position is in array bounds, and value of tile at position is not 0; Has hit a horizontal wall
 		{
 			newX = rayX;
@@ -175,7 +182,7 @@ Ray *getVerticalRay(float rayAngle, Player *player) {	  // Check Vertical map li
 	float negTan = -tan(rayAngle);
 	if (rayAngle > PIOVER2 && rayAngle < THREEPIOVER2) // if ray is facing left
 	{
-		rayX = multiplyBy64((int)(divideBy64((int)player->x))) - 0.0001; // accuracy
+		rayX = multiplyBy64((int)(divideBy64((int)player->x))) - 0.0001; // nearest vertical line x position
 		rayY = (player->x - rayX)*negTan + player->y;
 		xOffset = -mapScale;
 		yOffset = -xOffset * negTan;
@@ -198,6 +205,13 @@ Ray *getVerticalRay(float rayAngle, Player *player) {	  // Check Vertical map li
 		rayTileX = divideBy64((int)(rayX));
 		rayTileY = divideBy64((int)(rayY));
 		mapPos = rayTileY * mapX + rayTileX; // From x,y coordinates convert to number in tileMap Array
+		if (debugMode && rayX < 500) { // show vertices in pink
+			glColor3f(1, 0.1, .6);
+			glPointSize(6);
+			glBegin(GL_POINTS);
+			glVertex2i(rayX, rayY);
+			glEnd();
+		}
 		if (mapPos > 0 && mapPos < mapX*mapY && tileMap[mapPos] > 0) // if position is in array bounds, and value of tile at position is not 0; Has hit a vertical wall
 		{
 			newX = rayX;
@@ -220,7 +234,7 @@ void drawRays(Player *player) {
 	int rayDrawer;
 	float rayAngle;
 
-	if (tileMap[(divideBy64((int)player->y)) * mapX + (divideBy64((int)player->x))] > 0) { return; } // if the player is in a tile that is not empty, do not draw rays
+	if (tileMap[(divideBy64((int)player->y)) * mapX + (divideBy64((int)player->x))] > 0 || player->x > 512) { return; } // if the player is in a tile that is not empty, do not draw rays
 
 	rayAngle = player->angle - RADIANDEGREE * (rayCount-1); // set the initial ray angle to be the player's angle offset by raycount degrees (in radians)
 	rayAngle = returnUnitAngle(rayAngle);
@@ -259,10 +273,11 @@ void drawRays(Player *player) {
 
 // WINDOW EVENT HANDLERS
 
-void buttons(unsigned char key, int x, int y)
+void keyboardIn(unsigned char key, int x, int y)
 {
 	if (key == '=') { rayCount += 1; } // increment Ray Count
 	if (key == '-') { rayCount -= 1; } // decrement Ray Count
+	if (key == 't') { if (debugMode) { debugMode = false; } else { debugMode = true; } }
 	if (key == ' ') {  // Spacebar case - toggle b/w 1 & 360 rays
 		if (rayCount == 1) { rayCount = 360; }
 		else { rayCount = 1; }
@@ -280,7 +295,7 @@ void mouseActionHandler(int button, int state, int x, int y)
 	else if (button == GLUT_RIGHT_BUTTON)
 	{
 		rightClick = (state == GLUT_DOWN);
-		if (rightClick) {
+		if (rightClick && x < 500) {
 			int mousePosInMap = (divideBy64((int)y)) * mapX + (divideBy64((int)x)); // pos in tile map
 			if (mousePosInMap > 0 && mousePosInMap < mapX*mapY && tileMap[mousePosInMap] == 0) { tileMap[mousePosInMap] = 1; } // if tile is empty, place tile
 			else if (mousePosInMap > 0 && mousePosInMap < mapX*mapY && tileMap[mousePosInMap] == 1) { tileMap[mousePosInMap] = 0; } // if tile is full, remove tile
@@ -337,9 +352,10 @@ void callText() // Information text that appears on the right side
 	drawTextFromString(540, 180, "Right Click to place/remove a tile");
 	drawTextFromString(540, 230, "Press `Space` to toggle between 1 and 360 rays");
 	drawTextFromString(540, 330, "Number of Rays: " + to_string(rayCount));
-	drawTextFromString(540, 380, "Player's Angle: " + to_string((player->angle) / RADIANDEGREE));
+	drawTextFromString(540, 380, "Player's Angle: " + to_string((player->angle)));
 	drawReactiveText(900, 330, "[LMB]", leftClick);
 	drawReactiveText(900, 380, "[RMB]", rightClick);
+	drawReactiveText(540, 430, "Hit 't' to show vertices", debugMode);
 
 }
 
@@ -385,7 +401,7 @@ int main(int argc, char* argv[])
 	glutCreateWindow("AP CSP Create -- Raycast");
 	init();
 	glutDisplayFunc(display);
-	glutKeyboardFunc(buttons);
+	glutKeyboardFunc(keyboardIn);
 	glutMouseFunc(mouseActionHandler);
 	glutMotionFunc(mouseMotion);
 	glutMainLoop();
